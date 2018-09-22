@@ -1,8 +1,9 @@
 import PortMixin from 'ember-debug/mixins/port-mixin';
 
 const Ember = window.Ember;
-const { String: { classify, dasherize }, computed, observer, run: { later }, Object: EmberObject } = Ember;
+const { String: { classify, dasherize }, computed, observer, run: { later }, Object: EmberObject, Utils, getWithDefault } = Ember;
 const { oneWay, readOnly } = computed;
+
 
 const { hasOwnProperty } = Object.prototype;
 
@@ -120,7 +121,7 @@ export default EmberObject.extend(PortMixin, {
 
 });
 
-function buildSubTree(routeTree, route) {
+async function buildSubTree(routeTree, route) {
   let handlers = route.handlers;
   let owner = this.get('namespace.owner');
   let subTree = routeTree;
@@ -144,6 +145,11 @@ function buildSubTree(routeTree, route) {
       const router = this.get('router');
       const routerLib = router._routerMicrolib || router.router;
       routeHandler = routerLib.getHandler(handler);
+
+      if (getWithDefault(routeHandler, 'then', false)) {
+        routeHandler = await routeHandler;
+      }
+
       controllerName = routeHandler.get('controllerName') || routeHandler.get('routeName');
       controllerFactory = owner.factoryFor ? owner.factoryFor(`controller:${controllerName}`) : owner._lookupFactory(`controller:${controllerName}`);
       controllerClassName = this.getClassName(controllerName, 'controller');
